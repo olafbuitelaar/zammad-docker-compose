@@ -61,6 +61,12 @@ services:
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
+  
+  zammad-varnish:
+    image: ${IMAGE_REPO}:zammad-varnish${VERSION}
+    environment:
+        - VARNISH_SIZE=500M
+    restart: ${RESTART}
 
   zammad-postgresql:
     environment:

@@ -25,6 +25,8 @@ set -e
 : "${RSYNC_ADDITIONAL_PARAMS:=--no-perms --no-owner}"
 : "${ZAMMAD_RAILSSERVER_HOST:=zammad-railsserver}"
 : "${ZAMMAD_RAILSSERVER_PORT:=3000}"
+: "${ZAMMAD_VARNISH_HOST:=zammad-varnish}"
+: "${ZAMMAD_VARNISH_PORT:=80}"
 : "${ZAMMAD_WEBSOCKET_HOST:=zammad-websocket}"
 : "${ZAMMAD_WEBSOCKET_PORT:=6042}"
 
@@ -127,6 +129,14 @@ if [ "$1" = 'zammad-nginx' ]; then
       -e "s#server .*:6042#server ${ZAMMAD_WEBSOCKET_HOST}:${ZAMMAD_WEBSOCKET_PORT}#g" \
       -e "s#server_name .*#server_name ${NGINX_SERVER_NAME};#g" \
       -e 's#/var/log/nginx/zammad.\(access\|error\).log#/dev/stdout#g' < contrib/nginx/zammad.conf > /etc/nginx/sites-enabled/default
+
+
+  #forward inline images to varnish when available
+  if [ ! -z "$ZAMMAD_VARNISH_HOST" -a ! -z "`getent hosts ${ZAMMAD_VARNISH_HOST}`" ]; then
+     awk  '/upstream zammad-websocket \{/{print "upstream zammad-varnish{\nserver '"$ZAMMAD_RAILSSERVER_HOST:$ZAMMAD_RAILSSERVER_PORT"' backup;\nserver '"$ZAMMAD_VARNISH_HOST:$ZAMMAD_VARNISH_PORT"';\n}\n"}1' /etc/nginx/sites-available/default > /tmp/nginx_tmp     
+     awk '/location \~ \^\/\(assets/{print "location ~ ^/api/v1/ticket_attachment/\d+/\d+/\d+/? {\nproxy_set_header Host $http_host;\nproxy_set_header CLIENT_IP $remote_addr;\nproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\nproxy_set_header X-Forwarded-Proto $scheme;\nproxy_set_header X-Forwarded-User \"\";\nproxy_read_timeout 300;\nproxy_pass http://zammad-varnish;\n}\n"}1' /tmp/nginx_tmp > /tmp/nginx_tmp_final
+     mv -f /tmp/nginx_tmp_final /etc/nginx/sites-available/default && chown zammad.zammad /etc/nginx/sites-available/default && chmod 644 /etc/nginx/sites-available/default 
+  fi
 
   echo "starting nginx..."
 
