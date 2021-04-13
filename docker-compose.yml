@@ -58,9 +58,18 @@ services:
     links:
       - zammad-railsserver
       - zammad-websocket
+      - zammad-varnish
     restart: ${RESTART}
     volumes:
       - zammad-data:/opt/zammad
+  
+  zammad-varnish:
+    image: ${IMAGE_REPO}:zammad-varnish${VERSION}
+    links:
+      - zammad-railsserver
+    environment:
+        - VARNISH_SIZE=500M
+    restart: ${RESTART}
 
   zammad-postgresql:
     environment:
