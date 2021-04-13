@@ -133,7 +133,7 @@ if [ "$1" = 'zammad-nginx' ]; then
 
   #forward inline images to varnish when available
   if [ ! -z "$ZAMMAD_VARNISH_HOST" -a ! -z "`getent hosts ${ZAMMAD_VARNISH_HOST}`" ]; then
-     awk  '/upstream zammad-websocket \{/{print "upstream zammad-varnish{\nserver '"$ZAMMAD_RAILSSERVER_HOST:$ZAMMAD_RAILSSERVER_PORT"' backup;\nserver '"$ZAMMAD_VARNISH_HOST:$ZAMMAD_VARNISH_PORT"';\n}\n"}1' /etc/nginx/sites-available/default > /tmp/nginx_tmp     
+     awk '/upstream zammad-websocket \{/{print "upstream zammad-varnish{\nserver '"$ZAMMAD_RAILSSERVER_HOST:$ZAMMAD_RAILSSERVER_PORT"' backup;\nserver '"$ZAMMAD_VARNISH_HOST:$ZAMMAD_VARNISH_PORT"';\n}\n"}1' /etc/nginx/sites-available/default > /tmp/nginx_tmp     
      awk '/location \~ \^\/\(assets/{print "location ~ ^/api/v1/ticket_attachment/\d+/\d+/\d+/? {\nproxy_set_header Host $http_host;\nproxy_set_header CLIENT_IP $remote_addr;\nproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\nproxy_set_header X-Forwarded-Proto $scheme;\nproxy_set_header X-Forwarded-User \"\";\nproxy_read_timeout 300;\nproxy_pass http://zammad-varnish;\n}\n"}1' /tmp/nginx_tmp > /tmp/nginx_tmp_final
      mv -f /tmp/nginx_tmp_final /etc/nginx/sites-available/default && chown zammad.zammad /etc/nginx/sites-available/default && chmod 644 /etc/nginx/sites-available/default 
   fi

@@ -68,7 +68,7 @@ services:
     links:
       - zammad-railsserver
     environment:
-        - VARNISH_SIZE=500M
+      - VARNISH_SIZE=500M
     restart: ${RESTART}
 
   zammad-postgresql:
